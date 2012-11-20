@@ -123,6 +123,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.TreeMap;
 
+import android.provider.Settings.SettingNotFoundException;
+import com.android.internal.app.ThemeUtils;
+
 /**
  * This class provides a system service that manages input methods.
  */
@@ -160,7 +163,8 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
     private static final String TAG_TRY_SUPPRESSING_IME_SWITCHER = "TrySuppressingImeSwitcher";
 
 
-    final Context mContext;
+    final Context mContext;	
+    private Context mUiContext;
     final Resources mRes;
     final Handler mHandler;
     final InputMethodSettings mSettings;
@@ -845,6 +849,13 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
                         (KeyguardManager) mContext.getSystemService(Context.KEYGUARD_SERVICE);
                 mNotificationManager = (NotificationManager)
                         mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+
+		ThemeUtils.registerThemeChangeReceiver(mContext, new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        mUiContext = null;
+                    }
+                });
 
                 mStatusBar = statusBar;
                 statusBar.setIconVisibility("ime", false);
@@ -2591,6 +2602,13 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
         }
     }
 
+    private Context getUiContext() {
+        if (mUiContext == null) {
+            mUiContext = ThemeUtils.createUiContext(mContext);
+        }
+        return mUiContext != null ? mUiContext : mContext;
+    }
+
     // ----------------------------------------------------------------------
 
     private void showInputMethodMenu() {
@@ -2627,7 +2645,7 @@ public class InputMethodManagerService extends IInputMethodManager.Stub
     private void showInputMethodMenuInternal(boolean showSubtypes) {
         if (DEBUG) Slog.v(TAG, "Show switching menu");
 
-        final Context context = mContext;
+        final Context context = getUiContext();
         final boolean isScreenLocked = isScreenLocked();
 
         final String lastInputMethodId = mSettings.getSelectedInputMethod();
