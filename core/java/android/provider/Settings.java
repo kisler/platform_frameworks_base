@@ -3074,6 +3074,18 @@ public final class Settings {
          */
         public static final String EXPANDED_DESKTOP_STYLE = "expanded_desktop_style";
 
+	/**
+         * Show the pending notification counts as overlays on the status bar
+         * @hide
+         */
+        public static final String SYSTEM_PROFILES_ENABLED = "system_profiles_enabled";
+
+        /**
+         * Whether power menu profiles switcher is enabled
+         * @hide
+         */
+        public static final String POWER_MENU_PROFILES_ENABLED = "power_menu_profiles_enabled";
+
        /**
          * Whether power menu expanded desktop is enabled
          * @hide
