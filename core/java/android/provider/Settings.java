@@ -2896,6 +2896,13 @@ public final class Settings {
         public static final String CLEAR_RECENTS_BUTTON_LOCATION = "clear_recents_button_location";
 
         /**
+         * Quick Settings show text under icon
+         *
+         * @hide
+         */
+        public static final String QUICK_SETTINGS_SHOW_LABELS = "qs_show_text";
+
+        /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
          *
