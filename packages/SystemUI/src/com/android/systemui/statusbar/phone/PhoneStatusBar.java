@@ -121,6 +121,9 @@ import java.util.ArrayList;
 
 import com.android.systemui.statusbar.AppSidebar;
 
+import android.annotation.ChaosLab;
+import android.annotation.ChaosLab.Classification;
+
 public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     static final String TAG = "PhoneStatusBar";
     public static final boolean DEBUG = BaseStatusBar.DEBUG;
@@ -521,6 +524,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     // ================================================================================
     // Constructing the view
     // ================================================================================
+    @ChaosLab(name="GestureAnywhere", classification=Classification.CHANGE_CODE)
     protected PhoneStatusBarView makeStatusBarView() {
         final Context context = mContext;
 
@@ -606,6 +610,12 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
 	if (mRecreating) {
             removeSidebarView();
+        }
+	else 
+	{
+            /* ChaosLab: GestureAnywhere - BEGIN */
+            addGestureAnywhereView();
+            /* ChaosLab: GestureAnywhere - END */
         }
 
 	addSidebarView();
