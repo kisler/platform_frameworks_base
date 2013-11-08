@@ -119,6 +119,8 @@ import java.io.FileDescriptor;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 
+import com.android.systemui.statusbar.AppSidebar;
+
 public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
     static final String TAG = "PhoneStatusBar";
     public static final boolean DEBUG = BaseStatusBar.DEBUG;
@@ -368,6 +370,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                     false, this, UserHandle.USER_ALL);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.STATUS_BAR_BATTERY), false, this);
+	    resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.APP_SIDEBAR_POSITION), false, this);
             updateSettings();
         }
 
@@ -467,10 +471,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         addNavigationBar();
 
-        // status bar brightness control observer
-        SettingsObserver observer = new SettingsObserver(mHandler);
-        observer.observe();
-
         // Lastly, call to the icon policy to install/update all the icons.
         mIconPolicy = new PhoneStatusBarPolicy(mContext);
 
@@ -513,6 +513,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                 mRibbonQS.setupQuickSettings();
             }
         }
+
+	SettingsObserver observer = new SettingsObserver(mHandler);
+        observer.observe();
     }
 
     // ================================================================================
@@ -600,6 +603,12 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
         } catch (RemoteException ex) {
             // no window manager? good luck with that
         }
+
+	if (mRecreating) {
+            removeSidebarView();
+        }
+
+	addSidebarView();
 
         // figure out which pixel-format to use for the status bar.
         mPixelFormat = PixelFormat.OPAQUE;
@@ -826,6 +835,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         // receive broadcasts
         IntentFilter filter = new IntentFilter();
+	filter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
         filter.addAction(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
         filter.addAction(Intent.ACTION_SCREEN_ON);
@@ -2966,6 +2976,13 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
                 Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC;
         mBrightnessControl = !autoBrightness && Settings.System.getInt(
                 resolver, Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL, 0) == 1;
+
+	int sidebarPosition = Settings.System.getInt(
+                resolver, Settings.System.APP_SIDEBAR_POSITION, AppSidebar.SIDEBAR_POSITION_LEFT);
+            if (sidebarPosition != mSidebarPosition) {
+                mSidebarPosition = sidebarPosition;
+                mWindowManager.updateViewLayout(mAppSidebar, getAppSidebarLayoutParams(sidebarPosition));
+	    }
 
         int batteryStyle = Settings.System.getInt(resolver,
                 Settings.System.STATUS_BAR_BATTERY, BATTERY_STYLE_NORMAL);
