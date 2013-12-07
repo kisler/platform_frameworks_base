@@ -68,6 +68,7 @@ import com.android.systemui.quicksettings.BluetoothTile;
 import com.android.systemui.quicksettings.BrightnessTile;
 import com.android.systemui.quicksettings.BugReportTile;
 import com.android.systemui.quicksettings.CameraTile;
+import com.android.systemui.quicksettings.DockBatteryTile;
 import com.android.systemui.quicksettings.ExpandedDesktopTile;
 import com.android.systemui.quicksettings.GPSTile;
 import com.android.systemui.quicksettings.InputMethodTile;
@@ -143,6 +144,10 @@ public class QuickSettingsController {
         mQuickSettingsTiles = new ArrayList<QuickSettingsTile>();
         mSettingsKey = settingsKey;
         mRibbonMode = ribbonMode;
+    }
+
+    public boolean isRibbonMode() {
+        return mRibbonMode;
     }
 
     void loadTiles() {
@@ -257,10 +262,10 @@ public class QuickSettingsController {
                 mQuickSettingsTiles.add(qs);
 
                 // Add dock battery beside main battery when possible
-                /*if (qs instanceof BatteryTile) {
+                if (qs instanceof BatteryTile) {
                     loadDockBatteryTile(resolver, inflater);
                     dockBatteryLoaded = true;
-                }*/
+                }
             }
         }
 
@@ -301,6 +306,22 @@ public class QuickSettingsController {
             qs.setupQuickSettingsTile(inflater, mContainerView);
             mQuickSettingsTiles.add(qs);
         }
+    }
+
+    private void loadDockBatteryTile(final ContentResolver resolver,
+            final LayoutInflater inflater) {
+        if (!QSUtils.deviceSupportsDockBattery(mContext)) {
+            return;
+        }
+        if (Settings.System.getIntForUser(resolver,
+                    Settings.System.QS_DYNAMIC_DOCK_BATTERY, 1, UserHandle.USER_CURRENT) == 0) {
+            return;
+        }
+
+        QuickSettingsTile qs = new DockBatteryTile(mContext, this,
+                mStatusBarService.mDockBatteryController);
+        qs.setupQuickSettingsTile(inflater, mContainerView);
+        mQuickSettingsTiles.add(qs);
     }
 
     public void shutdown() {
