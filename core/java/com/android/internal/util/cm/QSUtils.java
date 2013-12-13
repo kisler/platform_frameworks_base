@@ -43,6 +43,11 @@ public class QSUtils {
             return (BluetoothAdapter.getDefaultAdapter() != null);
         }
 
+        public static boolean expandedDesktopEnabled(ContentResolver resolver) {
+            return Settings.System.getIntForUser(resolver, Settings.System.EXPANDED_DESKTOP_STYLE,
+                    0, UserHandle.USER_CURRENT_OR_SELF) != 0;
+        }
+
         public static boolean deviceSupportsNfc(Context ctx) {
             return NfcAdapter.getDefaultAdapter(ctx) != null;
         }
@@ -50,12 +55,6 @@ public class QSUtils {
         public static boolean deviceSupportsLte(Context ctx) {
             final TelephonyManager tm = (TelephonyManager) ctx.getSystemService(Context.TELEPHONY_SERVICE);
             return (tm.getLteOnCdmaMode() == PhoneConstants.LTE_ON_CDMA_TRUE) || tm.getLteOnGsmMode() != 0;
-        }
-
-        public static boolean deviceSupportsDockBattery(Context ctx) {
-            Resources res = ctx.getResources();
-            //return res.getBoolean(com.android.internal.R.bool.config_hasDockBattery);
-	    return false;
         }
 
         public static boolean deviceSupportsCamera() {
@@ -68,9 +67,5 @@ public class QSUtils {
 
         public static boolean deviceSupportsTorch(Context context) {
             return context.getResources().getBoolean(com.android.internal.R.bool.config_enableTorch);
-        }
-
-        public static boolean adbEnabled(ContentResolver resolver) {
-            return (Settings.Global.getInt(resolver, Settings.Global.ADB_ENABLED, 0)) == 1;
         }
 }
