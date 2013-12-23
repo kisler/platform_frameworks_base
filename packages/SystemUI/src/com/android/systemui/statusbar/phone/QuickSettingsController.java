@@ -31,6 +31,7 @@ import static com.android.internal.util.cm.QSConstants.TILE_LTE;
 import static com.android.internal.util.cm.QSConstants.TILE_MOBILEDATA;
 import static com.android.internal.util.cm.QSConstants.TILE_NETWORKMODE;
 import static com.android.internal.util.cm.QSConstants.TILE_NFC;
+import static com.android.internal.util.cm.QSConstants.TILE_QUICKRECORD;
 import static com.android.internal.util.cm.QSConstants.TILE_RINGER;
 import static com.android.internal.util.cm.QSConstants.TILE_SCREENTIMEOUT;
 import static com.android.internal.util.cm.QSConstants.TILE_SETTINGS;
@@ -74,6 +75,7 @@ import com.android.systemui.quicksettings.LteTile;
 import com.android.systemui.quicksettings.MobileNetworkTile;
 import com.android.systemui.quicksettings.MobileNetworkTypeTile;
 import com.android.systemui.quicksettings.NfcTile;
+import com.android.systemui.quicksettings.QuickRecordTile;
 import com.android.systemui.quicksettings.PreferencesTile;
 import com.android.systemui.quicksettings.QuickSettingsTile;
 import com.android.systemui.quicksettings.RingerModeTile;
@@ -235,7 +237,9 @@ public class QuickSettingsController {
                 // User cannot add the NFC tile if the device does not support it
                 // No need to check again here
                 qs = new NfcTile(mContext, this);
-            } else if (tile.equals(TILE_WIMAX)) {
+            } else if (tile.equals(TILE_QUICKRECORD)) {
+                qs = new QuickRecordTile(mContext, this);
+	    }else if (tile.equals(TILE_WIMAX)) {
                 // Not available yet
             } else if (tile.equals(TILE_LTE)) {
                 qs = new LteTile(mContext, this);

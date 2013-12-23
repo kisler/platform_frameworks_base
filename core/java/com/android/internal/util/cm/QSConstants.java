@@ -3,7 +3,7 @@ package com.android.internal.util.cm;
 import java.util.ArrayList;
 
 public class QSConstants {
-        public static final String TILE_USER = "toggleUser";
+public static final String TILE_USER = "toggleUser";
         public static final String TILE_BATTERY = "toggleBattery";
         public static final String TILE_SETTINGS = "toggleSettings";
         public static final String TILE_WIFI = "toggleWifi";
@@ -24,6 +24,7 @@ public class QSConstants {
         public static final String TILE_LTE = "toggleLte";
         public static final String TILE_WIMAX = "toggleWimax";
         public static final String TILE_NFC = "toggleNfc";
+	public static final String TILE_QUICKRECORD = "toggleQuickRecord";
         public static final String TILE_USBTETHER = "toggleUsbTether";
         public static final String TILE_VOLUME = "toggleVolume";
         public static final String TILE_EXPANDEDDESKTOP = "toggleExpandedDesktop";
