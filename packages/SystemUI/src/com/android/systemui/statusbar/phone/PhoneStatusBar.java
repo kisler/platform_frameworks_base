@@ -474,6 +474,14 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode {
 
         addNavigationBar();
 
+	// status bar brightness control observer
+        SettingsObserver observer = new SettingsObserver(mHandler);
+        observer.observe();
+
+	// status bar brightness control observer
+        SettingsObserver observer = new SettingsObserver(mHandler);
+        observer.observe();
+
         // Lastly, call to the icon policy to install/update all the icons.
         mIconPolicy = new PhoneStatusBarPolicy(mContext);
 
