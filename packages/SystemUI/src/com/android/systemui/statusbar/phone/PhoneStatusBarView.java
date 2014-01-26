@@ -32,6 +32,8 @@ import android.view.accessibility.AccessibilityEvent;
 import com.android.systemui.EventLogTags;
 import com.android.systemui.R;
 
+import android.provider.Settings;
+
 public class PhoneStatusBarView extends PanelBar {
     private static final String TAG = "PhoneStatusBarView";
     private static final boolean DEBUG = PhoneStatusBar.DEBUG;
@@ -222,10 +224,9 @@ public class PhoneStatusBarView extends PanelBar {
             }
         }
 
-        if (!mContext.getResources().getBoolean(
-                com.android.internal.R.bool.config_disableDoubleTapSleepGesture)) {
+        if (Settings.System.getInt(mContext.getContentResolver(),
+                    Settings.System.DOUBLE_TAP_SLEEP_GESTURE, 0) == 1)
             mDoubleTapGesture.onTouchEvent(event);
-        }
 
         return barConsumedEvent || super.onTouchEvent(event);
     }
