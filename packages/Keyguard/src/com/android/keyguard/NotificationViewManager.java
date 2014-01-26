@@ -187,7 +187,7 @@ public class NotificationViewManager {
             boolean ongoingAndReposted = sbn.isOngoing() && mHostView.containsNotification(sbn);
             if (mHostView.addNotification(sbn, (screenOffAndNotCovered || mIsScreenOn) && !ongoingAndReposted,
                         config.forceExpandedView) && config.wakeOnNotification && screenOffAndNotCovered
-                        && !ongoingAndReposted) {
+                        && !ongoingAndReposted && mTimeCovered == 0
                 wakeDevice();
             }
         }
