@@ -223,7 +223,7 @@ public class AudioService extends IAudioService.Stub {
      * NOTE: do not create loops in aliases!
      * Some streams alias to different streams according to device category (phone or tablet) or
      * use case (in call vs off call...). See updateStreamVolumeAlias() for more details.
-     *  STREAM_VOLUME_ALIAS contains the default aliases for a voice capable device (phone) and
+     *  mStreamVolumeAlias contains the default aliases for a voice capable device (phone) and
      *  STREAM_VOLUME_ALIAS_NON_VOICE for a non voice capable device (tablet).*/
     private final int[] STREAM_VOLUME_ALIAS = new int[] {
         AudioSystem.STREAM_VOICE_CALL,      // STREAM_VOICE_CALL
@@ -306,8 +306,6 @@ public class AudioService extends IAudioService.Stub {
      */
     // protected by mSettingsLock
     private int mRingerMode;
-    // last non-normal ringer mode
-    private int mLastSilentRingerMode = -1;
 
     /** @see System#MODE_RINGER_STREAMS_AFFECTED */
     private int mRingerModeAffectedStreams = 0;
@@ -546,9 +544,7 @@ public class AudioService extends IAudioService.Stub {
         intentFilter.addAction(Intent.ACTION_BOOT_COMPLETED);
         intentFilter.addAction(Intent.ACTION_SCREEN_ON);
         intentFilter.addAction(Intent.ACTION_SCREEN_OFF);
-        intentFilter.addAction(Intent.ACTION_USER_BACKGROUND);
         intentFilter.addAction(Intent.ACTION_USER_SWITCHED);
-        intentFilter.addAction(Intent.ACTION_HEADSET_PLUG);
 
         intentFilter.addAction(Intent.ACTION_CONFIGURATION_CHANGED);
         // TODO merge orientation and rotation
@@ -1013,14 +1009,8 @@ public class AudioService extends IAudioService.Stub {
                 (mStreamVolumeAlias[streamType] == getMasterStreamType())) {
             int newRingerMode;
             if (index == 0) {
-                synchronized (mSettingsLock) {
-                    if (mLastSilentRingerMode != -1) {
-                        newRingerMode = mLastSilentRingerMode;
-                    } else {
-                        newRingerMode = mHasVibrator ? AudioManager.RINGER_MODE_VIBRATE
-                            : AudioManager.RINGER_MODE_SILENT;
-                    }
-                }
+                newRingerMode = mHasVibrator ? AudioManager.RINGER_MODE_VIBRATE
+                                              : AudioManager.RINGER_MODE_SILENT;
             } else {
                 newRingerMode = AudioManager.RINGER_MODE_NORMAL;
             }
@@ -1447,9 +1437,6 @@ public class AudioService extends IAudioService.Stub {
     private void setRingerModeInt(int ringerMode, boolean persist) {
         synchronized(mSettingsLock) {
             mRingerMode = ringerMode;
-            if (ringerMode != AudioManager.RINGER_MODE_NORMAL) {
-                mLastSilentRingerMode = ringerMode;
-            }
         }
 
         // Mute stream if not previously muted by ringer mode and ringer mode
@@ -2550,15 +2537,11 @@ public class AudioService extends IAudioService.Stub {
                     //   (step <= oldIndex < 2 * step) is equivalent to: (old UI index == 1)
                     if (step <= oldIndex && oldIndex < 2 * step) {
                         ringerMode = RINGER_MODE_VIBRATE;
-                        if (mVoiceCapable)
-                            adjustVolumeIndex = false;
                     }
                 } else {
                     // (oldIndex < step) is equivalent to (old UI index == 0)
                     if ((oldIndex < step) && mPrevVolDirection != AudioManager.ADJUST_LOWER) {
                         ringerMode = RINGER_MODE_SILENT;
-                        if (mVoiceCapable)
-                            adjustVolumeIndex = false;
                     }
                 }
             }
@@ -3788,51 +3771,39 @@ public class AudioService extends IAudioService.Stub {
             //       and mRingerModeAffectedStreams, so will leave this synchronized for now.
             //       mRingerModeMutedStreams and mMuteAffectedStreams are safe (only accessed once).
             synchronized (mSettingsLock) {
-                if (uri.equals(Settings.System.getUriFor(Settings.System.MODE_RINGER_STREAMS_AFFECTED))) {
-                    int ringerModeAffectedStreams = Settings.System.getIntForUser(mContentResolver,
-                           Settings.System.MODE_RINGER_STREAMS_AFFECTED,
-                           ((1 << AudioSystem.STREAM_RING)|(1 << AudioSystem.STREAM_NOTIFICATION)|
-                           (1 << AudioSystem.STREAM_SYSTEM)|(1 << AudioSystem.STREAM_SYSTEM_ENFORCED)),
-                           UserHandle.USER_CURRENT);
-                    if (mVoiceCapable) {
-                        ringerModeAffectedStreams &= ~(1 << AudioSystem.STREAM_MUSIC);
-                    } else {
-                        ringerModeAffectedStreams |= (1 << AudioSystem.STREAM_MUSIC);
-                    }
-                    synchronized (mCameraSoundForced) {
-                        if (mCameraSoundForced) {
-                            ringerModeAffectedStreams &= ~(1 << AudioSystem.STREAM_SYSTEM_ENFORCED);
-                        } else {
-                            ringerModeAffectedStreams |= (1 << AudioSystem.STREAM_SYSTEM_ENFORCED);
-                        }
-                    }
-                    if (ringerModeAffectedStreams != mRingerModeAffectedStreams) {
+                if (uri.equals(Settings.System.getUriFor(
+                    Settings.System.SAFE_HEADSET_VOLUME))) {
+                    mSafeVolumeEnabled = safeVolumeEnabled(mContentResolver);
+                } else if (uri.equals(Settings.System.getUriFor(
+                    Settings.System.VOLUME_KEYS_CONTROL_MEDIA_STREAM))) {
+                    mVolumeKeysControlMediaStream = Settings.System.getIntForUser(mContentResolver,
+                            Settings.System.VOLUME_KEYS_CONTROL_MEDIA_STREAM, 0,
+                            UserHandle.USER_CURRENT) == 1;
+                } else if (uri.equals(Settings.System.getUriFor(
+                    Settings.System.MODE_RINGER_STREAMS_AFFECTED))) {
+                    if (updateRingerModeAffectedStreams()) {
                         /*
                          * Ensure all stream types that should be affected by ringer mode
                          * are in the proper state.
                          */
-                        mRingerModeAffectedStreams = ringerModeAffectedStreams;
                         setRingerModeInt(getRingerMode(), false);
                     }
-
-                } else if (uri.equals(Settings.Global.getUriFor(Settings.Global.DOCK_AUDIO_MEDIA_ENABLED))) {
+                } else if (uri.equals(Settings.Global.getUriFor(
+                    Settings.Global.DOCK_AUDIO_MEDIA_ENABLED))) {
                     readDockAudioSettings(mContentResolver);
 
-                } else if (uri.equals(Settings.System.getUriFor(Settings.System.VOLUME_LINK_NOTIFICATION))) {
-                    mLinkNotificationWithVolume = Settings.System.getInt(mContentResolver,
-                            Settings.System.VOLUME_LINK_NOTIFICATION, 1) == 1;
+                } else if (uri.equals(Settings.System.getUriFor(
+                    Settings.System.VOLUME_LINK_NOTIFICATION))) {
+                    mLinkNotificationWithVolume = Settings.System.getIntForUser(mContentResolver,
+                        Settings.System.VOLUME_LINK_NOTIFICATION, 1,
+                        UserHandle.USER_CURRENT) == 1;
                     if (mLinkNotificationWithVolume) {
-                        mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] = AudioSystem.STREAM_RING;
+                        mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] =
+                            AudioSystem.STREAM_RING;
                     } else {
-                        mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] = AudioSystem.STREAM_NOTIFICATION;
+                        mStreamVolumeAlias[AudioSystem.STREAM_NOTIFICATION] =
+                            AudioSystem.STREAM_NOTIFICATION;
                     }
-
-                } else if (uri.equals(Settings.System.getUriFor(Settings.System.SAFE_HEADSET_VOLUME))) {
-                    mSafeVolumeEnabled = safeVolumeEnabled(mContentResolver);
-                } else if (uri.equals(Settings.System.getUriFor(Settings.System.VOLUME_KEYS_CONTROL_MEDIA_STREAM))) {
-                    mVolumeKeysControlMediaStream = Settings.System.getIntForUser(mContentResolver,
-                            Settings.System.VOLUME_KEYS_CONTROL_MEDIA_STREAM, 0,
-                            UserHandle.USER_CURRENT) == 1;
                 }
             }
         }
@@ -4191,16 +4162,6 @@ public class AudioService extends IAudioService.Stub {
                         }
                     }
                 }
-            } else if (action.equals(Intent.ACTION_HEADSET_PLUG)) {
-                state = intent.getIntExtra("state", 0);
-                if (state == 1) {
-                    // Headset plugged in
-                    adjustCurrentStreamVolume();
-                    // TODO: Cap volume at safe levels
-                } else {
-                    // Headset disconnected
-                    adjustCurrentStreamVolume();
-                }
             } else if (action.equals(Intent.ACTION_USB_AUDIO_ACCESSORY_PLUG) ||
                            action.equals(Intent.ACTION_USB_AUDIO_DEVICE_PLUG)) {
                 state = intent.getIntExtra("state", 0);
@@ -4291,14 +4252,13 @@ public class AudioService extends IAudioService.Stub {
                         0,
                         null,
                         SAFE_VOLUME_CONFIGURE_TIMEOUT_MS);
-                adjustCurrentStreamVolume();
             } else if (action.equals(Intent.ACTION_SCREEN_ON)) {
                 AudioSystem.setParameters("screen_state=on");
             } else if (action.equals(Intent.ACTION_SCREEN_OFF)) {
                 AudioSystem.setParameters("screen_state=off");
             } else if (action.equals(Intent.ACTION_CONFIGURATION_CHANGED)) {
                 handleConfigurationChanged(context);
-            } else if (action.equals(Intent.ACTION_USER_BACKGROUND)) {
+            } else if (action.equals(Intent.ACTION_USER_SWITCHED)) {
                 // attempt to stop music playback for background user
                 sendMsg(mAudioHandler,
                         MSG_BROADCAST_AUDIO_BECOMING_NOISY,
@@ -4307,7 +4267,6 @@ public class AudioService extends IAudioService.Stub {
                         0,
                         null,
                         0);
-            } else if (action.equals(Intent.ACTION_USER_SWITCHED)) {
                 // the current audio focus owner is no longer valid
                 mMediaFocusControl.discardAudioFocusOwner();
 
@@ -4320,20 +4279,6 @@ public class AudioService extends IAudioService.Stub {
                         0,
                         0,
                         mStreamStates[AudioSystem.STREAM_MUSIC], 0);
-            }
-        }
-
-        private void adjustCurrentStreamVolume() {
-            VolumeStreamState streamState;
-            int device;
-
-            for (int stream = 0; stream < AudioSystem.getNumStreamTypes(); stream++) {
-                if (stream == mStreamVolumeAlias[stream]) {
-                    streamState = mStreamStates[mStreamVolumeAlias[stream]];
-                    device = getDeviceForStream(stream);
-                    // apply stored value for device
-                    streamState.applyDeviceVolume(device);
-                }
             }
         }
     }
