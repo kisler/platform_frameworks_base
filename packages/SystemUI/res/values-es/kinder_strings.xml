@@ -37,4 +37,6 @@
     <!-- Screen record notification error title -->
     <string name="screenrecord_notif_error">No se puede grabar la pantalla</string>
 
+    <string name="screenshot_delete_confirmation">Captura de pantalla borrada</string>
+
 </resources>
