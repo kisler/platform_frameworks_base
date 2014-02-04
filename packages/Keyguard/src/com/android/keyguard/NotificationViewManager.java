@@ -187,7 +187,7 @@ public class NotificationViewManager {
             boolean ongoingAndReposted = sbn.isOngoing() && mHostView.containsNotification(sbn);
             if (mHostView.addNotification(sbn, (screenOffAndNotCovered || mIsScreenOn) && !ongoingAndReposted,
                         config.forceExpandedView) && config.wakeOnNotification && screenOffAndNotCovered
-                        && !ongoingAndReposted && mTimeCovered == 0) {
+                        && !ongoingAndReposted) {
                 wakeDevice();
             }
         }
@@ -269,9 +269,7 @@ public class NotificationViewManager {
     }
 
     private void wakeDevice() {
-        if (mTimeCovered == 0) {
-            mPowerManager.wakeUp(SystemClock.uptimeMillis());
-        }
+        mPowerManager.wakeUp(SystemClock.uptimeMillis());
     }
 
     public void onScreenTurnedOff() {
