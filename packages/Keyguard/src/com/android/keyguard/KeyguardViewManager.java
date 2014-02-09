@@ -63,6 +63,8 @@ import android.view.ViewManager;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 
+import java.io.File;
+
 /**
  * Manages creating, showing, hiding and resetting the keyguard.  Calls back
  * via {@link KeyguardViewMediator.ViewMediatorCallback} to poke
@@ -105,6 +107,9 @@ public class KeyguardViewManager {
 
     private Bitmap mBlurredImage = null;
     private int mLastRotation = 0;
+
+    private static final String FONDO_BLOQUEO_PNG = "/sdcard/Kinder/bloqueo.png";
+    private static final String FONDO_BLOQUEO_JPG = "/sdcard/Kinder/bloqueo.jpg";
 
     private KeyguardUpdateMonitorCallback mBackgroundChanger = new KeyguardUpdateMonitorCallback() {
         @Override
@@ -286,8 +291,24 @@ public class KeyguardViewManager {
                             -(bounds.height() - vHeight) / 2);
                     mCustomBackground.draw(canvas);
                     canvas.restoreToCount(restore);
-                } else {
-                    canvas.drawColor(BACKGROUND_COLOR, PorterDuff.Mode.SRC);
+                } 
+		else 
+		{
+			File file_png = new File(FONDO_BLOQUEO_PNG);
+			File file_jpg = new File(FONDO_BLOQUEO_JPG);
+
+ 	               	if (file_png.exists()) 
+			{
+				setCustomBackground(new BitmapDrawable(mContext.getResources(), FONDO_BLOQUEO_PNG));
+			}
+			else if (file_jpg.exists()) 
+			{
+                    		setCustomBackground(new BitmapDrawable(mContext.getResources(), FONDO_BLOQUEO_JPG));
+			}
+			else
+			{
+				canvas.drawColor(BACKGROUND_COLOR, PorterDuff.Mode.SRC);
+			}
                 }
             }
 
